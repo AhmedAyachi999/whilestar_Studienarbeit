@@ -42,6 +42,11 @@ data class Variable(val name: String) : AddressExpression {
   override fun toString(): String = "$name"
 }
 
+data class Range(val lower:Int, val upper:Int){
+    fun inRange(x: Int) : Boolean = x >= lower && x <= upper
+}
+fun Int.toRange() = Range(this, this)
+
 data class DeRef(val reference: AddressExpression) : AddressExpression {
   override fun evaluate(scope: Scope, memory: Memory): AddressApp {
     val refApp = reference.evaluate(scope, memory)

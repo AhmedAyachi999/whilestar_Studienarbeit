@@ -18,20 +18,19 @@
 
 package tools.aqua.wvm.machine
 
+import tools.aqua.wvm.analysis.hoare.SMTSolver
 import java.math.BigInteger
 import java.util.Scanner
 import tools.aqua.wvm.analysis.semantics.StatementApp
-import tools.aqua.wvm.language.BooleanExpression
-import tools.aqua.wvm.language.SequenceOfStatements
-import tools.aqua.wvm.language.Statement
-import tools.aqua.wvm.language.True
+import tools.aqua.wvm.language.*
 
 data class Context(
     val scope: Scope,
     val program: List<Statement>,
     val pre: BooleanExpression = True,
     val post: BooleanExpression = True,
-    var input: Scanner? = null
+    var input: Scanner? = null,
+    var model: Map<String, String>?=null
 ) {
   fun execute(verbose: Boolean, output: Output = Output(), maxSteps: Int = -1): List<StatementApp> {
     var cfg = Configuration(SequenceOfStatements(program), scope, initMemForScope())
@@ -58,13 +57,114 @@ data class Context(
     if (verbose) println("end.")
     return trace
   }
+  fun augment(scope: Scope): BooleanExpression? {
+    var newPre: BooleanExpression? = null
 
+    // Process all symbols (both variables and array elements)
+    scope.symbols.forEach { entry ->
+      val variableName = entry.key
+      val variableValue = entry.value.first
+
+      if (entry.value.size == 1) {
+        val varData = variableValue.split("..")
+        if (varData.size == 2) {
+          val eq1 = Gte(
+            ValAtAddr(Variable(variableName)),
+            NumericLiteral(varData[0].replace("\\s".toRegex(), "").toBigInteger())
+          )
+          val eq2 = Lte(
+            ValAtAddr(Variable(variableName)),
+            NumericLiteral(varData[1].replace("\\s".toRegex(), "").toBigInteger())
+          )
+          newPre = if (newPre == null) And(eq1, eq2) else And(newPre!!, And(eq1, eq2))
+        } else {
+          val expectedValue = NumericLiteral(variableValue.toBigInteger())
+          val eq = Eq(ValAtAddr(Variable(variableName)), expectedValue, 0)
+          newPre = if (newPre == null) eq else And(newPre!!, eq)
+        }
+      } else {
+        val arrayValues = variableValue.split(",")
+        var i = 0
+        for (value in arrayValues) {
+          val varData = value.split("..")
+          if (varData.size == 2) {
+            val eq1 = Gte(
+              ValAtAddr(Variable("$variableName$i")),
+              NumericLiteral(varData[0].toBigInteger())
+            )
+            val eq2 = Lte(
+              ValAtAddr(Variable("$variableName$i")),
+              NumericLiteral(varData[1].toBigInteger())
+            )
+            newPre = if (newPre == null) And(eq1, eq2) else And(newPre!!, And(eq1, eq2))
+          } else {
+            val expectedValue = NumericLiteral(value.toBigInteger())
+            val eq = Eq(ValAtAddr(Variable(variableName)), expectedValue, 0)
+            newPre = if (newPre == null) eq else And(newPre!!, eq)
+          }
+          i++
+        }
+      }
+    }
+
+    return newPre
+  }
   private fun initMemForScope(): Memory {
-    var mem = Memory(Array(scope.size) { BigInteger.ZERO })
-    scope.symbols.values
-        .filter { it.size > 1 }
-        .forEach { mem = mem.write(it.address, it.address.toBigInteger().plus(BigInteger.ONE)) }
-    return mem
+    val declarationBlock = augment(this.scope)
+    val expr = And(this.pre,declarationBlock!!)
+    val smtSolver = SMTSolver()
+    val model = smtSolver.solve(expr).model
+    this.model=model
+    if (1!=1) {
+      var memArray = Array(scope.size) { BigInteger.ZERO }
+      val keysList = scope.symbols.keys.toList().map { key ->
+        if (key.matches(Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]"))) {
+          val matchResult = Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]").find(key)
+          val (arrayName, index) = matchResult!!.destructured
+          "array_${arrayName}${index}" // Transform to array_y0 format
+        } else {
+          key // Leave unchanged if it doesn't match the pattern
+        }
+      }
+
+      var i = 0
+      if(model.size!=0) {
+        while (i < memArray.size) {
+          memArray[i] = model.get(keysList.get(i))!!.toBigInteger()
+          i = i + 1
+        }
+      }
+      else{
+        throw Exception("Solution not possible !")
+      }
+      var mem = Memory(memArray)
+      return mem
+    } else {
+      val keysList = scope.symbols.keys.toList()
+      //val input = this.input!!.nextLine()
+      val input_Array= "1 12 5".split(" ")
+      var memArray = Array(scope.size) { BigInteger.ZERO }
+      var i = 0
+      var j = 0
+      while (i < memArray.size) {
+        if(scope.symbols.get(keysList.get(i))!!.first.split("..").size==2){
+          //scope.symbols.get(keysList.get(i))!!.input=input_Array.get(j)
+          if(scope.symbols.get(keysList.get(i))!!.input!!.inRange(input_Array.get(j).toInt())) {
+            memArray[i] = input_Array.get(j).toBigInteger()
+            j++
+          }
+          else{
+            throw IllegalArgumentException("Error : Input not in range")
+          }
+        }
+        else {
+          memArray[i] = scope.symbols.get(keysList.get(i))!!.first.toBigInteger()
+        }
+        i = i + 1
+      }
+      var mem = Memory(memArray)
+      return mem
+    }
   }
 
   override fun toString(): String {

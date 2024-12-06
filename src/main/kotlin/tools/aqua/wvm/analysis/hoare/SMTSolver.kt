@@ -39,11 +39,18 @@ class SMTSolver {
   val ctx = Context(QF_LIA)
 
   fun asKonstraint(expr: AddressExpression): Expression<IntSort> {
-    if (expr is Variable) {
-      if (!vars.containsKey(expr.name)) {
-        vars += (expr.name to DeclareConst(Symbol(expr.name), IntSort))
+    var exprString = expr.toString()
+    if(exprString.contains("[")){
+      exprString = "array_"+exprString.replace(Regex("[\\[\\]]"), "")
+    }
+    else {
+      exprString = exprString.replace(Regex("[\\[\\]]"), "")
+    }
+    if (expr is Variable || expr is ArrayAccess ) {
+      if (!vars.containsKey(exprString)) {
+        vars += (exprString to DeclareConst(Symbol(exprString), IntSort))
       }
-      return UserDeclaredExpression(Symbol(expr.name), IntSort)
+      return UserDeclaredExpression(Symbol(exprString), IntSort)
     } else throw Exception("WPC Proof System cannot compute with address expression ${expr}")
   }
 

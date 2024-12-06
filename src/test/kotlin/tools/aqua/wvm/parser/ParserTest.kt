@@ -28,17 +28,12 @@ class ParserTest {
         Parser.parse(
             """
 vars:
-  int x;
-  int y;
-  int z;
+ int[2] y := [1..13,11..20];
+ int x := 9;
+ int z := 3..5;
+pre:(y[1]>13)
 code:
-  x := 10;
-  y := 20;
-  z := x + y;
-  while (x > 0)  {
-    x := x - 1;
-  };
-  y := 0;
+x := x+2;
 """)
     println(ctx)
     ctx.execute(true)

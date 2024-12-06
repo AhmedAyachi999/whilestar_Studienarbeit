@@ -153,14 +153,44 @@ class WPCProofSystem(val context: Context, val output: Output) {
         is Forall -> Forall(phi.boundVar, replace(phi.expression, v, replacement))
       }
 
-  fun augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
-    var newPre = pre
-    scope.symbols
-        .filter { it.value.size == 1 && it.value.type == BasicType.INT }
-        .map { Eq(ValAtAddr(Variable(it.key)), NumericLiteral(BigInteger.ZERO), 0) }
-        .forEach { newPre = And(newPre, it) }
-    return newPre
-  }
+    fun transformToArrayName(input: String): String {
+        val regex = """([a-zA-Z_]\w*)\[(\d+)]""".toRegex()
+        return input.replace(regex) { matchResult ->
+            val variableName = matchResult.groupValues[1]
+            val index = matchResult.groupValues[2]
+            "array_${variableName}${index}"
+        }
+    }
+    fun augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
+        var newPre = pre
+        if(this.context.input!!.nextLine()!=null) {
+            scope.symbols
+                .filter { it.value.input == null }
+                .map {
+                    Eq(
+                        ValAtAddr(Variable(it.key)),
+                        NumericLiteral(context.model!!.get(transformToArrayName(it.key))!!.toBigInteger()),
+                        0
+                    )
+                }
+                .forEach { newPre = And(newPre, it) }
+        }
+        else{
+            scope.symbols
+                .filter { it.value.input == null }
+                .map {
+                    Eq(
+                        ValAtAddr(Variable(it.key)),
+                        NumericLiteral(context.model!!.get(transformToArrayName(it.key))!!.toBigInteger()),
+                        0
+                    )
+                }
+                .forEach { newPre = And(newPre, it) }
+
+
+        }
+        return newPre
+    }
 
   fun proof(): Boolean {
     val pre = augment(context.pre, context.scope)

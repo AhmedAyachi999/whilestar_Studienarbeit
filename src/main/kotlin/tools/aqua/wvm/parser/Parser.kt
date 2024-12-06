@@ -25,6 +25,7 @@ import org.petitparser.parser.combinators.SequenceParser
 import org.petitparser.parser.combinators.SettableParser.undefined
 import org.petitparser.parser.primitive.CharacterParser.*
 import org.petitparser.parser.primitive.StringParser.of
+import org.w3c.dom.ranges.Range
 import tools.aqua.wvm.language.*
 import tools.aqua.wvm.machine.Context
 import tools.aqua.wvm.machine.Scope
@@ -283,23 +284,99 @@ object Parser {
 	}
 	} + star.star().map { results: List<Any> -> Pair(1, buildType(results.size)) }
 
-  private val decl =
-      (intKW * typeSize * identifier * semicolon).map { results: List<Any> ->
-        Pair(results[2], results[1])
-      }
+    private val array_values = ((numeral * (comma * numeral).star().optional())).flatten() trim whitespaceCat
 
-  private fun buildScope(entries: List<Pair<String, Pair<Int, Type>>>): Scope {
-    val info = HashMap<String, Scope.ElementInfo>()
-    var addr = 0
-    for (e in entries) {
-      info[e.first] = Scope.ElementInfo(e.second.second, addr, e.second.first)
-      addr += e.second.first
+    private val rangeVariable = (numeral * range * numeral).flatten() trim whitespaceCat
+
+    private val array_range_values = (((rangeVariable+ numeral) * (comma * (rangeVariable+ numeral)).star())).flatten() trim whitespaceCat
+    private val decl =
+        (((intKW * typeSize * identifier * assign * numeral * semicolon).map {results: List<Any> ->
+            Pair(results[4],Pair(results[2], results[1]))}
+                + (intKW * typeSize * identifier * assign * lsbr * array_values * rsbr * semicolon).map { results: List<Any> ->
+            Pair(results[5],Pair(results[2], results[1]))}
+                + (intKW * typeSize * identifier * assign * lsbr * array_range_values * rsbr * semicolon).map { results: List<Any> ->
+            Pair(results[5],Pair(results[2], results[1]))}
+                +(intKW * typeSize * identifier * assign * rangeVariable * semicolon).map { results: List<Any> ->
+            Pair(results[4],Pair(results[2], results[1]))
+        }) + ((intKW * typeSize * identifier * semicolon).map { results: List<Any> ->
+            Pair(results[2], results[1])}))
+
+    private fun buildScope(entries: List<Pair<String, Pair<String, Pair<Int, Type>>>>): Scope {
+        val sortedInfo = linkedMapOf<String, Scope.ElementInfo>() // Initialize a LinkedHashMap
+        var addr = 0
+        var test1 = false
+        var test2= false
+        // Populate the LinkedHashMap with initial entries
+        for (e in entries) {
+            if(e.second.second is Pair) {
+                val rangeP = e.first.split(",")
+                if(rangeP.size!= 1 && !((rangeP.size+1).equals(e.second.second.first))){
+                    throw IllegalArgumentException("Error : Wrong Table Values")
+                }
+                if(rangeP.size>=2){
+                    var elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, (addr +1).toString(),null)
+                    sortedInfo[e.second.first] = elementInfo
+                    addr += 1
+                    for(i in 0..rangeP.size-1){
+                        val RangeArray = rangeP.get(i).split("..")
+                        if(RangeArray.size==2){
+                            elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),
+                                Range(RangeArray.get(0).toInt(),RangeArray.get(1).toInt())
+                            )
+                        }
+                        else{
+                            elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),null)
+                        }
+                        sortedInfo[e.second.first+"["+i.toString()+"]"] = elementInfo
+                        addr += 1
+                        test1= true
+                    }
+                }
+                else{
+                    if(e.first.split("..").size==2){
+                        val ArraySplit = e.first.split("..")
+                        val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,
+                            Range(ArraySplit.get(0).toInt(),ArraySplit.get(1).toInt())
+                        )
+                        sortedInfo[e.second.first] = elementInfo
+                        addr += e.second.second.first
+                        test1= true
+                    }
+                    else{
+                        val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,null)
+                        sortedInfo[e.second.first] = elementInfo
+                        addr += e.second.second.first
+                        test1= true
+                    }
+                }
+            }
+            else if(e.second is Pair){
+                val t = e as Pair<String, Pair<Int, Type>>
+                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, t.first,null)
+                sortedInfo[t.first] = elementInfo
+                addr += t.second.first
+                test2=true
+            }
+            if (test1 && test2) {
+                throw IllegalArgumentException("Error: Cannot initialize with and without values")
+            }
+
+        }
+
+        // Sort the LinkedHashMap by addresses
+        val sortedEntries = sortedInfo.entries.sortedBy { it.value.address }
+
+        // Create a new LinkedHashMap with sorted entries
+        val finalSortedMap = linkedMapOf<String, Scope.ElementInfo>()
+        for (entry in sortedEntries) {
+            finalSortedMap[entry.key] = entry.value
+        }
+
+        return Scope(finalSortedMap, addr)
     }
-    return Scope(info, addr)
-  }
 
-  private val declList =
-      decl.star().map { decls: List<Pair<String, Pair<Int, Type>>> -> buildScope(decls) }
+    private val declList =
+        decl.star().map { decls: List<Pair<String, Pair<String, Pair<Int, Type>>>> -> buildScope(decls) } trim whitespaceCat
 
   private val program =
       (vars *
