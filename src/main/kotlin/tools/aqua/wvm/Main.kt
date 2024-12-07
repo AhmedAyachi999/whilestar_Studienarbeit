@@ -47,9 +47,12 @@ class While : CliktCommand() {
 
   private val filename: String by argument(help = "source file to interpret")
 
+  private val model: Boolean by
+  option("-m", "--model", help = "Shows a possible model for the variable").flag()
+
   override fun run() {
 
-    if (!run && !typecheck && !proof) {
+    if (!run && !typecheck && !proof ) {
       echoFormattedHelp()
       exitProcess(1)
     }
@@ -86,7 +89,11 @@ class While : CliktCommand() {
         val wps = WPCProofSystem(context, out)
         wps.proof()
       }
-
+      if (model) {
+        val out = Output()
+        val wps = WPCProofSystem(context, out)
+        System.out.println(wps.model())
+      }
       if (run) {
         val trace = context.execute(verbose)
       }

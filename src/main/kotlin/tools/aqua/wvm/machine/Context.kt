@@ -19,6 +19,7 @@
 package tools.aqua.wvm.machine
 
 import tools.aqua.wvm.analysis.hoare.SMTSolver
+import tools.aqua.wvm.analysis.hoare.WPCProofSystem
 import java.math.BigInteger
 import java.util.Scanner
 import tools.aqua.wvm.analysis.semantics.StatementApp
@@ -115,7 +116,8 @@ data class Context(
     val smtSolver = SMTSolver()
     val model = smtSolver.solve(expr).model
     this.model=model
-    if (1!=1) {
+    System.out.println("UserInput")
+    if (this.input==null) {
       var memArray = Array(scope.size) { BigInteger.ZERO }
       val keysList = scope.symbols.keys.toList().map { key ->
         if (key.matches(Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]"))) {
@@ -133,22 +135,22 @@ data class Context(
           memArray[i] = model.get(keysList.get(i))!!.toBigInteger()
           i = i + 1
         }
+
       }
       else{
         throw Exception("Solution not possible !")
       }
       var mem = Memory(memArray)
+
       return mem
     } else {
       val keysList = scope.symbols.keys.toList()
-      //val input = this.input!!.nextLine()
-      val input_Array= "1 12 5".split(" ")
+      val input_Array= this.input!!.nextLine().split(" ")
       var memArray = Array(scope.size) { BigInteger.ZERO }
       var i = 0
       var j = 0
       while (i < memArray.size) {
         if(scope.symbols.get(keysList.get(i))!!.first.split("..").size==2){
-          //scope.symbols.get(keysList.get(i))!!.input=input_Array.get(j)
           if(scope.symbols.get(keysList.get(i))!!.input!!.inRange(input_Array.get(j).toInt())) {
             memArray[i] = input_Array.get(j).toBigInteger()
             j++
@@ -162,6 +164,7 @@ data class Context(
         }
         i = i + 1
       }
+
       var mem = Memory(memArray)
       return mem
     }

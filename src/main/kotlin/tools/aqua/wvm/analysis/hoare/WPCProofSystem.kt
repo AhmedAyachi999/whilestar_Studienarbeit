@@ -20,6 +20,7 @@ package tools.aqua.wvm.analysis.hoare
 
 import java.math.BigInteger
 import tools.aqua.konstraints.smt.SatStatus
+import tools.aqua.konstraints.smt.symbol
 import tools.aqua.wvm.language.*
 import tools.aqua.wvm.machine.Context
 import tools.aqua.wvm.machine.Output
@@ -152,46 +153,42 @@ class WPCProofSystem(val context: Context, val output: Output) {
         // since bound vars are never program vars, we only need to replace on expression
         is Forall -> Forall(phi.boundVar, replace(phi.expression, v, replacement))
       }
-
-    fun transformToArrayName(input: String): String {
-        val regex = """([a-zA-Z_]\w*)\[(\d+)]""".toRegex()
-        return input.replace(regex) { matchResult ->
-            val variableName = matchResult.groupValues[1]
-            val index = matchResult.groupValues[2]
-            "array_${variableName}${index}"
-        }
-    }
     fun augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
         var newPre = pre
-        if(this.context.input!!.nextLine()!=null) {
             scope.symbols
                 .filter { it.value.input == null }
                 .map {
                     Eq(
                         ValAtAddr(Variable(it.key)),
-                        NumericLiteral(context.model!!.get(transformToArrayName(it.key))!!.toBigInteger()),
+                        NumericLiteral(it.value.first.toBigInteger()),
                         0
                     )
                 }
                 .forEach { newPre = And(newPre, it) }
-        }
-        else{
+
             scope.symbols
-                .filter { it.value.input == null }
-                .map {
-                    Eq(
-                        ValAtAddr(Variable(it.key)),
-                        NumericLiteral(context.model!!.get(transformToArrayName(it.key))!!.toBigInteger()),
-                        0
+                .filter { it.value.input != null }
+                .flatMap {
+                    listOf(
+                        Gte(
+                            ValAtAddr(Variable(it.key)),
+                            NumericLiteral(it.value.input!!.lower.toBigInteger())
+                        ),
+                        Lte(
+                            ValAtAddr(Variable(it.key)),
+                            NumericLiteral(it.value.input!!.upper.toBigInteger())
+                        )
                     )
                 }
                 .forEach { newPre = And(newPre, it) }
-
-
-        }
         return newPre
     }
-
+    fun model(): String {
+        val pre = augment(context.pre, context.scope)
+        val solver = SMTSolver()
+        val result = solver.solve(pre)
+        return result.model.toString()
+    }
   fun proof(): Boolean {
     val pre = augment(context.pre, context.scope)
     val vcs = vcgen(pre, context.program, context.post)
