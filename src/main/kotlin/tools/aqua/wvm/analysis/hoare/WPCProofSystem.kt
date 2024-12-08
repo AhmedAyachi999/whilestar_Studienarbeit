@@ -155,7 +155,7 @@ class WPCProofSystem(val context: Context, val output: Output) {
       }
     fun augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
         var newPre = pre
-            scope.symbols
+        scope.symbols
                 .filter { it.value.input == null }
                 .map {
                     Eq(
@@ -183,13 +183,40 @@ class WPCProofSystem(val context: Context, val output: Output) {
                 .forEach { newPre = And(newPre, it) }
         return newPre
     }
-    fun model(): String {
-        val pre = augment(context.pre, context.scope)
+    fun User_augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
+        var newPre = pre
+        scope.symbols
+            .map {
+                Eq(
+                    ValAtAddr(Variable(it.key)),
+                    NumericLiteral(it.value.UserInput!!.toBigInteger()),
+                    0
+                )
+            }
+            .forEach { newPre = And(newPre, it) }
+        return newPre
+    }
+    fun InputTest(): SatStatus {
+        val pre = User_augment(context.pre, context.scope)
+        output.println(pre)
         val solver = SMTSolver()
         val result = solver.solve(pre)
-        return result.model.toString()
+        return result.status
     }
-  fun proof(): Boolean {
+    fun model(): String {
+        val pre = augment(context.pre, context.scope)
+        output.println(pre)
+        val solver = SMTSolver()
+        val result = solver.solve(pre)
+        return result.model.toString().replace(Regex("array_([a-zA-Z])([0-9]+)")) { matchResult ->
+            val character = matchResult.groupValues[1]
+            val index = matchResult.groupValues[2]
+            "$character[$index]"
+        }
+    }
+
+
+fun proof(): Boolean {
     val pre = augment(context.pre, context.scope)
     val vcs = vcgen(pre, context.program, context.post)
     output.println("==== generating verification conditions: ====")

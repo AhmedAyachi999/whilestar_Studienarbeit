@@ -116,8 +116,7 @@ data class Context(
     val smtSolver = SMTSolver()
     val model = smtSolver.solve(expr).model
     this.model=model
-    System.out.println("UserInput")
-    if (this.input==null) {
+    if (1!=1) {
       var memArray = Array(scope.size) { BigInteger.ZERO }
       val keysList = scope.symbols.keys.toList().map { key ->
         if (key.matches(Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]"))) {
@@ -150,21 +149,28 @@ data class Context(
       var i = 0
       var j = 0
       while (i < memArray.size) {
-        if(scope.symbols.get(keysList.get(i))!!.first.split("..").size==2){
-          if(scope.symbols.get(keysList.get(i))!!.input!!.inRange(input_Array.get(j).toInt())) {
-            memArray[i] = input_Array.get(j).toBigInteger()
-            j++
+        val ArrayValues = scope.symbols.get(keysList.get(i))!!.first
+        if(ArrayValues.split("..").size==2){
+          if (j<input_Array.size){
+            if(scope.symbols.get(keysList.get(i))!!.input!!.inRange(input_Array.get(j).toInt())) {
+              scope.symbols.get(keysList.get(i))!!.UserInput= input_Array.get(j).toBigInteger().toString()
+              memArray[i] = input_Array.get(j).toBigInteger()
+              j++
+            }
+            else{
+              throw IllegalArgumentException("Error : Input not in range")
+            }
           }
           else{
-            throw IllegalArgumentException("Error : Input not in range")
+            throw IllegalArgumentException("Error : Not enough inputs")
           }
         }
         else {
+          scope.symbols.get(keysList.get(i))!!.UserInput= scope.symbols.get(keysList.get(i))!!.first.toBigInteger().toString()
           memArray[i] = scope.symbols.get(keysList.get(i))!!.first.toBigInteger()
         }
         i = i + 1
       }
-
       var mem = Memory(memArray)
       return mem
     }

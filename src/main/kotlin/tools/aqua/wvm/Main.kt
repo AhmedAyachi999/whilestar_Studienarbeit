@@ -92,7 +92,12 @@ class While : CliktCommand() {
       if (model) {
         val out = Output()
         val wps = WPCProofSystem(context, out)
-        System.out.println(wps.model())
+        if (externalInput) {
+          System.out.println(wps.InputTest())
+        }
+        else{
+          System.out.println(wps.model())
+        }
       }
       if (run) {
         val trace = context.execute(verbose)

@@ -313,19 +313,19 @@ object Parser {
                 if(rangeP.size!= 1 && !((rangeP.size+1).equals(e.second.second.first))){
                     throw IllegalArgumentException("Error : Wrong Table Values")
                 }
-                if(rangeP.size>=2){
-                    var elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, (addr +1).toString(),null)
+                else if(e.second.second.first>=2){
+                    var elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, (addr +1).toString(),null,"")
                     sortedInfo[e.second.first] = elementInfo
                     addr += 1
                     for(i in 0..rangeP.size-1){
                         val RangeArray = rangeP.get(i).split("..")
                         if(RangeArray.size==2){
                             elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),
-                                Range(RangeArray.get(0).toInt(),RangeArray.get(1).toInt())
+                                Range(RangeArray.get(0).toInt(),RangeArray.get(1).toInt()),""
                             )
                         }
                         else{
-                            elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),null)
+                            elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),null,"")
                         }
                         sortedInfo[e.second.first+"["+i.toString()+"]"] = elementInfo
                         addr += 1
@@ -336,14 +336,14 @@ object Parser {
                     if(e.first.split("..").size==2){
                         val ArraySplit = e.first.split("..")
                         val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,
-                            Range(ArraySplit.get(0).toInt(),ArraySplit.get(1).toInt())
+                            Range(ArraySplit.get(0).toInt(),ArraySplit.get(1).toInt(),),""
                         )
                         sortedInfo[e.second.first] = elementInfo
                         addr += e.second.second.first
                         test1= true
                     }
                     else{
-                        val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,null)
+                        val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,null,"")
                         sortedInfo[e.second.first] = elementInfo
                         addr += e.second.second.first
                         test1= true
@@ -352,7 +352,7 @@ object Parser {
             }
             else if(e.second is Pair){
                 val t = e as Pair<String, Pair<Int, Type>>
-                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, t.first,null)
+                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, t.first,null,"")
                 sortedInfo[t.first] = elementInfo
                 addr += t.second.first
                 test2=true
