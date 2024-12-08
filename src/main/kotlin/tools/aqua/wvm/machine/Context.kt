@@ -116,7 +116,7 @@ data class Context(
     val smtSolver = SMTSolver()
     val model = smtSolver.solve(expr).model
     this.model=model
-    if (1!=1) {
+    if (this.input==null) {
       var memArray = Array(scope.size) { BigInteger.ZERO }
       val keysList = scope.symbols.keys.toList().map { key ->
         if (key.matches(Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]"))) {
