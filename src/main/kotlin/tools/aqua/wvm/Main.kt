@@ -89,18 +89,19 @@ class While : CliktCommand() {
         val wps = WPCProofSystem(context, out)
         wps.proof()
       }
+      if (run) {
+        val trace = context.execute(verbose)
+      }
+
       if (model) {
         val out = Output()
         val wps = WPCProofSystem(context, out)
         if (externalInput) {
-          System.out.println(wps.InputTest())
+          System.out.println("With user input, the condition is: "+wps.InputTest())
         }
         else{
-          System.out.println(wps.model())
+          System.out.println("Model used : "+ wps.model())
         }
-      }
-      if (run) {
-        val trace = context.execute(verbose)
       }
     } catch (e: Exception) {
       println("ERROR: ${e.message}")

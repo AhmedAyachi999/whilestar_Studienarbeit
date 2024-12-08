@@ -183,9 +183,18 @@ class WPCProofSystem(val context: Context, val output: Output) {
                 .forEach { newPre = And(newPre, it) }
         return newPre
     }
+    fun isBigInteger(value: String): Boolean {
+        return try {
+            BigInteger(value)
+            true
+        } catch (e: NumberFormatException) {
+            false
+        }
+    }
     fun User_augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
         var newPre = pre
         scope.symbols
+            .filter { isBigInteger(it.value.UserInput!!)==true }
             .map {
                 Eq(
                     ValAtAddr(Variable(it.key)),
@@ -198,14 +207,14 @@ class WPCProofSystem(val context: Context, val output: Output) {
     }
     fun InputTest(): SatStatus {
         val pre = User_augment(context.pre, context.scope)
-        output.println(pre)
+        output.println("Deklarationscondtion ϕ aus dem Deklarationsblock : "+pre)
         val solver = SMTSolver()
         val result = solver.solve(pre)
         return result.status
     }
     fun model(): String {
         val pre = augment(context.pre, context.scope)
-        output.println(pre)
+        output.println("Deklarationscondtion ϕ aus dem Deklarationsblock : "+pre)
         val solver = SMTSolver()
         val result = solver.solve(pre)
         return result.model.toString().replace(Regex("array_([a-zA-Z])([0-9]+)")) { matchResult ->

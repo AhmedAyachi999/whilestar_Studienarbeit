@@ -30,9 +30,10 @@ class ParserTest {
 vars:
  int[2] y := [1..13,11..20];
  int x := 9;
-pre:(y[1]>21)
+ int z := 3..5;
+pre:(y[1]>13)
 code:
-y[0] := y[0]+2;
+x := x+2;
 """)
     println(ctx)
     ctx.execute(true)
