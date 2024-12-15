@@ -156,7 +156,7 @@ class WPCProofSystem(val context: Context, val output: Output) {
     fun augment(pre: BooleanExpression, scope: Scope): BooleanExpression {
         var newPre = pre
         scope.symbols
-                .filter { it.value.isRange == null }
+                .filter { it.value.isRangeOrNull == null }
                 .map {
                     Eq(
                         ValAtAddr(Variable(it.key)),
@@ -167,16 +167,16 @@ class WPCProofSystem(val context: Context, val output: Output) {
                 .forEach { newPre = And(newPre, it) }
 
             scope.symbols
-                .filter { it.value.isRange != null }
+                .filter { it.value.isRangeOrNull != null }
                 .flatMap {
                     listOf(
                         Gte(
                             ValAtAddr(Variable(it.key)),
-                            NumericLiteral(it.value.isRange!!.lower.toBigInteger())
+                            NumericLiteral(it.value.isRangeOrNull!!.lower.toBigInteger())
                         ),
                         Lte(
                             ValAtAddr(Variable(it.key)),
-                            NumericLiteral(it.value.isRange!!.upper.toBigInteger())
+                            NumericLiteral(it.value.isRangeOrNull!!.upper.toBigInteger())
                         )
                     )
                 }

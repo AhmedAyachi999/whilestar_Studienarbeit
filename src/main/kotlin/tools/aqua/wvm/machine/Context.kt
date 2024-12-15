@@ -151,7 +151,7 @@ data class Context(
         val ArrayValues = scope.symbols.get(keysList.get(i))!!.valueVar
         if(ArrayValues.split("..").size==2){
           if (j<input_Array.size){
-            if(scope.symbols.get(keysList.get(i))!!.isRange!!.inRange(input_Array.get(j).toInt())) {
+            if(scope.symbols.get(keysList.get(i))!!.isRangeOrNull!!.inRange(input_Array.get(j).toInt())) {
               scope.symbols.get(keysList.get(i))!!.UserInput= input_Array.get(j).toBigInteger().toString()
               memArray[i] = input_Array.get(j).toBigInteger()
               j++
