@@ -23,7 +23,7 @@ import tools.aqua.wvm.language.Type
 
 data class Scope(internal val symbols: Map<String, ElementInfo>, val size: Int) {
 
-  data class ElementInfo(val type: Type, val address: Int, val size: Int, val first: String, var input: Range?, var UserInput: String?)
+  data class ElementInfo(val type: Type, val address: Int, val size: Int, val valueVar: String, var isRangeOrNull: Range?, var UserInput: String?)
 
   fun resolve(name: String): Int =
       symbols[name]?.address ?: throw Exception("tried to resolve unknown variable: $name")

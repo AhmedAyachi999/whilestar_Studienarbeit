@@ -19,7 +19,6 @@
 package tools.aqua.wvm.machine
 
 import tools.aqua.wvm.analysis.hoare.SMTSolver
-import tools.aqua.wvm.analysis.hoare.WPCProofSystem
 import java.math.BigInteger
 import java.util.Scanner
 import tools.aqua.wvm.analysis.semantics.StatementApp
@@ -64,7 +63,7 @@ data class Context(
     // Process all symbols (both variables and array elements)
     scope.symbols.forEach { entry ->
       val variableName = entry.key
-      val variableValue = entry.value.first
+      val variableValue = entry.value.valueVar
 
       if (entry.value.size == 1) {
         val varData = variableValue.split("..")
@@ -117,7 +116,7 @@ data class Context(
     val model = smtSolver.solve(expr).model
     this.model=model
     if (this.input==null) {
-      var memArray = Array(scope.size) { BigInteger.ZERO }
+      val memArray = Array(scope.size) { BigInteger.ZERO }
       val keysList = scope.symbols.keys.toList().map { key ->
         if (key.matches(Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]"))) {
           val matchResult = Regex("([a-zA-Z_][a-zA-Z_0-9]*)\\[(\\d+)]").find(key)
@@ -139,20 +138,20 @@ data class Context(
       else{
         throw Exception("Solution not possible !")
       }
-      var mem = Memory(memArray)
+      val mem = Memory(memArray)
 
       return mem
     } else {
       val keysList = scope.symbols.keys.toList()
       val input_Array= this.input!!.nextLine().split(" ")
-      var memArray = Array(scope.size) { BigInteger.ZERO }
+      val memArray = Array(scope.size) { BigInteger.ZERO }
       var i = 0
       var j = 0
       while (i < memArray.size) {
-        val ArrayValues = scope.symbols.get(keysList.get(i))!!.first
+        val ArrayValues = scope.symbols.get(keysList.get(i))!!.valueVar
         if(ArrayValues.split("..").size==2){
           if (j<input_Array.size){
-            if(scope.symbols.get(keysList.get(i))!!.input!!.inRange(input_Array.get(j).toInt())) {
+            if(scope.symbols.get(keysList.get(i))!!.isRange!!.inRange(input_Array.get(j).toInt())) {
               scope.symbols.get(keysList.get(i))!!.UserInput= input_Array.get(j).toBigInteger().toString()
               memArray[i] = input_Array.get(j).toBigInteger()
               j++
@@ -166,12 +165,12 @@ data class Context(
           }
         }
         else {
-          scope.symbols.get(keysList.get(i))!!.UserInput= scope.symbols.get(keysList.get(i))!!.first.toBigInteger().toString()
-          memArray[i] = scope.symbols.get(keysList.get(i))!!.first.toBigInteger()
+          scope.symbols.get(keysList.get(i))!!.UserInput= scope.symbols.get(keysList.get(i))!!.valueVar.toBigInteger().toString()
+          memArray[i] = scope.symbols.get(keysList.get(i))!!.valueVar.toBigInteger()
         }
         i = i + 1
       }
-      var mem = Memory(memArray)
+      val mem = Memory(memArray)
       return mem
     }
   }
