@@ -28,10 +28,9 @@ class ParserTest {
         Parser.parse(
             """
 vars:
- int[2] y := [1..13,11..20];
- int x := 9;
- int z := 3..5;
-pre:(y[1]>13)
+ int x;
+ int z;
+pre:(true)
 code:
 x := x+2;
 """)

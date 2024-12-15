@@ -352,7 +352,7 @@ object Parser {
             }
             else if(e.second is Pair){
                 val t = e as Pair<String, Pair<Int, Type>>
-                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, t.first,null,"")
+                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, "0",null,"")
                 sortedInfo[t.first] = elementInfo
                 addr += t.second.first
                 test2=true
