@@ -97,7 +97,12 @@ class While : CliktCommand() {
         val out = Output()
         val wps = WPCProofSystem(context, out)
         if (externalInput) {
-          System.out.println("With user input, the condition is: "+wps.InputTest())
+          if (wps.InputTest().equals("unsat")){
+            throw IllegalArgumentException("With user input, the condition is: "+wps.InputTest())
+          }
+          else{
+            System.out.println("With user input, the condition is: "+wps.InputTest())
+          }
         }
         else{
           System.out.println("Model used : "+ wps.model())

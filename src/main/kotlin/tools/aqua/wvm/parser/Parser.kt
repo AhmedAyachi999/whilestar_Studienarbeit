@@ -274,7 +274,7 @@ object Parser {
 
   private val typeSize =
       (lsbr * numeral * rsbr).map { results: List<Any> ->
-	val arraySize = (results[1] as String).toInt()
+	val arraySize = (results[1] as String).filter { !it.isWhitespace() }.toInt()
 	if (arraySize <= arraySizeLimit) {   
             Pair(
 		arraySize + 1, /* +1 for the pointer to the data */
@@ -321,7 +321,7 @@ object Parser {
                         val RangeArray = rangeP.get(i).split("..")
                         if(RangeArray.size==2){
                             elementInfo = Scope.ElementInfo(e.second.second.second, addr, 1, rangeP.get(i),
-                                Range(RangeArray.get(0).toInt(),RangeArray.get(1).toInt()),""
+                                Range(RangeArray.get(0).filter { !it.isWhitespace() }.toInt(),RangeArray.get(1).filter { !it.isWhitespace() }.toInt()),""
                             )
                         }
                         else{
@@ -336,7 +336,7 @@ object Parser {
                     if(e.first.split("..").size==2){
                         val ArraySplit = e.first.split("..")
                         val elementInfo = Scope.ElementInfo(e.second.second.second, addr, e.second.second.first, e.first,
-                            Range(ArraySplit.get(0).toInt(),ArraySplit.get(1).toInt(),),""
+                            Range(ArraySplit.get(0).filter { !it.isWhitespace() }.toInt(),ArraySplit.get(1).filter { !it.isWhitespace() }.toInt(),),""
                         )
                         sortedInfo[e.second.first] = elementInfo
                         addr += e.second.second.first
@@ -352,10 +352,20 @@ object Parser {
             }
             else if(e.second is Pair){
                 val t = e as Pair<String, Pair<Int, Type>>
-                val elementInfo = Scope.ElementInfo(t.second.second, addr, t.second.first, "0",null,"")
-                sortedInfo[t.first] = elementInfo
-                addr += t.second.first
-                test2=true
+                if(t.second.first>1) {
+                    for (i in 0..t.second.first) {
+                        val elementInfo = Scope.ElementInfo(t.second.second, addr, 1, "0", null, "")
+                        sortedInfo[t.first + i] = elementInfo
+                        addr += 1
+                        test2 = true
+                    }
+                }
+                else{
+                    val elementInfo = Scope.ElementInfo(t.second.second, addr, 1, "0", null, "")
+                    sortedInfo[t.first] = elementInfo
+                    addr += 1
+                    test2 = true
+                }
             }
             if (test1 && test2) {
                 throw IllegalArgumentException("Error: Cannot initialize with and without values")
