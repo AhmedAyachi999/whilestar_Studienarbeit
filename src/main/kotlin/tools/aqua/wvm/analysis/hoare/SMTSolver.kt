@@ -40,11 +40,9 @@ class SMTSolver {
 
   fun asKonstraint(expr: AddressExpression): Expression<IntSort> {
     var exprString = expr.toString()
+    // Because of the SMTsolver.solve() method, we cannot use a[0], we transform it instead to array_a0
     if(exprString.contains("[")){
       exprString = "array_"+exprString.replace(Regex("[\\[\\]]"), "")
-    }
-    else {
-      exprString = exprString.replace(Regex("[\\[\\]]"), "")
     }
     if (expr is Variable || expr is ArrayAccess ) {
       if (!vars.containsKey(exprString)) {

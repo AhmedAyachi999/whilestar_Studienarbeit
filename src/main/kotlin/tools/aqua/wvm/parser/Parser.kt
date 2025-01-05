@@ -372,17 +372,7 @@ object Parser {
             }
 
         }
-
-        // Sort the LinkedHashMap by addresses
-        val sortedEntries = sortedInfo.entries.sortedBy { it.value.address }
-
-        // Create a new LinkedHashMap with sorted entries
-        val finalSortedMap = linkedMapOf<String, Scope.ElementInfo>()
-        for (entry in sortedEntries) {
-            finalSortedMap[entry.key] = entry.value
-        }
-
-        return Scope(finalSortedMap, addr)
+        return Scope(sortedInfo, addr)
     }
 
     private val declList =
