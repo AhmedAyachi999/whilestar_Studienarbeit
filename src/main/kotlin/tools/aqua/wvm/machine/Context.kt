@@ -78,7 +78,7 @@ data class Context(
           )
           newPre = if (newPre == null) And(eq1, eq2) else And(newPre!!, And(eq1, eq2))
         } else {
-          val expectedValue = NumericLiteral(variableValue.toBigInteger())
+          val expectedValue = NumericLiteral(variableValue.replace(" ","").toBigInteger())
           val eq = Eq(ValAtAddr(Variable(variableName)), expectedValue, 0)
           newPre = if (newPre == null) eq else And(newPre!!, eq)
         }

@@ -28,13 +28,13 @@ class ParserTest {
         Parser.parse(
             """
 vars:
-int[2]x := [1,2];
+int x := 9;
 int[2] y := [1,2];
 int z := 1..10;
-int[2] a := [1..10,11..20];
-pre: (a > 10)
+int[4] a := [2,3..4,  3, 5..10];
+pre:(true)
 code:
-x := x + 2;
+x := x+2;
 """)
     println(ctx)
     ctx.execute(true)
